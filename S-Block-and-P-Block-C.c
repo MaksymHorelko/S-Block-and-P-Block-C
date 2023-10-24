@@ -1,19 +1,58 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 // Розмір масиву за умовою
 #define SIZE 2
 
+// Кількість можливих ключів для 4ьох бітного числа
+#define numKeys 16
+
+/* Допоміжні функції */
+
+// Функція підрахунку бітів в числі
+uint8_t countBits(uint8_t x) {
+	return x >= 0b00010000 ? 8 : 4;
+}
+
+// Функція друку числа в бінарному виді
+void printBinary(unsigned char x) {
+	for (int i = 0; i < 8; i++) {
+		printf("%c", (x & 0x80) ? '1' : '0');
+		x <<= 1;
+	}
+	printf("\n");
+}
+
+// Функція розбивки 8бітного числа на дві тетради
+uint8_t* split(uint8_t x) {
+	uint8_t *splitedX = (uint8_t*) malloc(SIZE * sizeof(uint8_t));
+
+	// Розбивка 8 бітного числа на два блоки
+	splitedX[1] = x & 0b00001111;
+	splitedX[0] = x & 0b11110000;
+
+	splitedX[0] >>= 4;
+
+	return splitedX;
+}
+
+// Функція сполучення двох блоків
+uint8_t concatenateSplitedByte(uint8_t *array) {
+	return (array[0] << 4) | array[1];
+}
+
 /* Нижче функції для P-блоку */
 
-int swapTwoBits(int x, int bits) {
+// Функція перестановки двох бітів (першого та передостаннього)
+uint8_t swapTwoBits(uint8_t x, uint8_t bits) {
 	// Перестановка першогго біта та передостаннього
 	size_t bitPosition1 = 1; // Позиція першого біта для обміну
 	size_t bitPosition2 = bits - 1; // Позиція другого біта для обміну
 
 	// Знаходимо значення бітів за позицією
-	int bit1 = (x >> bitPosition1) & 1;
-	int bit2 = (x >> bitPosition2) & 1;
+	uint8_t bit1 = (x >> bitPosition1) & 1;
+	uint8_t bit2 = (x >> bitPosition2) & 1;
 
 	// Встановлюємо нові значення бітів
 	x &= ~(1 << bitPosition1);
@@ -25,14 +64,15 @@ int swapTwoBits(int x, int bits) {
 	return x;
 }
 
-int swapAllBits(int x, int bits) {
+// Функція перестановки всіх бітів
+uint8_t swapAllBits(uint8_t x, uint8_t bits) {
 	for (size_t i = 0; i < bits / 2; i++) {
 		size_t bitPosition1 = i; // Позиція першого біта для обміну
 		size_t bitPosition2 = bits - i - 1; // Позиція другого біта для обміну
 
 		// Знаходимо значення бітів за позицією
-		int bit1 = (x >> bitPosition1) & 1;
-		int bit2 = (x >> bitPosition2) & 1;
+		uint8_t bit1 = (x >> bitPosition1) & 1;
+		uint8_t bit2 = (x >> bitPosition2) & 1;
 
 		// Встановлюємо нові значення бітів
 		x &= ~(1 << bitPosition1);
@@ -44,17 +84,9 @@ int swapAllBits(int x, int bits) {
 	return x;
 }
 
-int countBits(int x) {
-	int bits = 4;
-	if (x >= 0b00010000) {
-		bits = 8;
-	}
-	return bits;
-}
-
 // Функція перестановки
-int f(int x) {
-	int bits = countBits(x);
+uint8_t f(uint8_t x) {
+	uint8_t bits = countBits(x);
 
 	x = swapAllBits(x, bits);
 
@@ -63,96 +95,158 @@ int f(int x) {
 	return x;
 }
 
-// Функція розбивки 8бітного числа на дві тетради
-int* split(int x) {
-	int *splitedX = (int*) malloc(SIZE * sizeof(int));
-
-	// Розбивка 8 бітного числа на два блоки
-	splitedX[0] = x & 0b00001111;
-	splitedX[1] = x & 0b11110000;
-
-	return splitedX;
-}
-
 // P-блок заміни
-int pBlock(int x) {
+uint8_t pBlock(uint8_t x) {
 	// Маска
 	x &= 0b11111111;
 
-	int *arr = split(x);
-
 	// Заміна за допомогою функції
-	for (size_t i = 0; i < SIZE; i++) {
-		arr[i] = f(arr[i]);
-	}
-	x = 0b00000000;
-	x += arr[1];
-	x += arr[0];
+	x = f(x);
+
 	return x;
 }
 
 // Функція відновлення для P-блоку
-int invPBlock(int x) {
+uint8_t invPBlock(uint8_t x) {
+	// Маска
 	x &= 0b11111111;
 
-	int *arr = split(x);
-
-	int bits = countBits(x);
+	uint8_t bits = countBits(x);
 
 	// Заміна за допомогою функції
-	for (size_t i = 0; i < SIZE; i++) {
-		arr[i] = swapTwoBits(arr[i], bits);
-		arr[i] = swapAllBits(arr[i], bits);
-
-	}
-	x = 0b00000000;
-	x += arr[1];
-	x += arr[0];
+	x = swapTwoBits(x, bits);
+	x = swapAllBits(x, bits);
 
 	return x;
 }
 
 /* Нижче функції для S-блоку */
 
-// S-блок перестановки
-void sBlock() {
+// Функція ініціалізації таблиці
+uint8_t* initStaticTable() {
+	// Створена табличка
+	static uint8_t table[] = {
+			0b1010, 0b1011, 0b0110, 0b1000,
+			0b0111, 0b1101, 0b0001, 0b0101,
+			0b1111, 0b0010, 0b0000, 0b1001,
+			0b0011, 0b0100, 0b1100, 0b1110
+	};
 
+	uint8_t *pointer = table;
+	return pointer;
+}
+
+// Функція створення ключів для таблиці
+uint8_t* createKeysForTable() {
+	uint8_t *key = (uint8_t*) malloc(numKeys * sizeof(uint8_t));
+	uint8_t k = 0b0000;
+	for (size_t i = 0; i < numKeys; i++) {
+		key[i] = k;
+		k += 0b0001;
+	}
+	return key;
+}
+
+// Функція знаходження значення в таблиці за допомогою відповідного ключа
+uint8_t findBitsByKeyInTable(uint8_t x, uint8_t *table, uint8_t *key) {
+	for (size_t i = 0; i < numKeys; i++) {
+		if (key[i] == x) {
+			return table[i];
+		}
+	}
+	return 0;
+}
+
+// S-блок перестановки
+uint8_t sBlock(uint8_t x) {
+
+	uint8_t *splitedByte = split(x);
+
+	uint8_t *table = initStaticTable();
+
+	uint8_t *keys = createKeysForTable();
+
+	// Заміна значень за таблицею
+	for (size_t i = 0; i < SIZE; i++) {
+		splitedByte[i] = findBitsByKeyInTable(splitedByte[i], table, keys);
+	}
+
+	uint8_t result = concatenateSplitedByte(splitedByte);
+
+	free(splitedByte);
+	free(keys);
+
+	return result;
 }
 
 // Функція відновлення для S-блоку
-void invSBlock() {
+uint8_t invSBlock(uint8_t x) {
 
-}
+	uint8_t *table = initStaticTable();
 
-// Довільний алгоритм 'шифруванння'
-int algorithm() {
+	uint8_t *keys = createKeysForTable();
 
-	return 1;
-}
+	uint8_t *splitedByte = split(x);
 
-void printBinary(int x) {
-	if (x > 1) {
-		printBinary(x / 2);
+	for (size_t j = 0; j < SIZE; j++) {
+		for (size_t i = 0; i < numKeys; i++) {
+			if (splitedByte[j] == table[i]) {
+				splitedByte[j] = keys[i];
+				break;
+			}
+		}
 	}
-	printf("%d", x % 2);
+
+	uint8_t result = concatenateSplitedByte(splitedByte);
+
+	free(splitedByte);
+	free(keys);
+
+	return result;
 }
 
 // Головна функція
 int main(void) {
-	int x = 0b11010001; // 209
+
+	uint8_t x = 0b11010001; // 209 // Вхідні дані
+
+	/* P-BLOCK */
+
+	printf("P-block: \n");
+
 	printf("Data: %d\nBin: ", x);
 	printBinary(x);
-	printf("\n\n");
+	printf("\n");
 
-	int codedX = pBlock(x);
-	printf("Coded: %d\nBin: ", codedX);
+	uint8_t codedX = pBlock(x);
+	printf("Coded by P block: %d\nBin: ", codedX);
 	printBinary(codedX);
-	printf("\n\n");
+	printf("\n");
 
-	int unCodedX = invPBlock(codedX);
+	uint8_t unCodedX = invPBlock(codedX);
 	printf("Uncoded: %d\nBin: ", unCodedX);
 	printBinary(unCodedX);
-	printf("\n\n");
+	printf("\n");
+
+	/* S-BLOCK */
+
+	printf("S-block: \n");
+
+	printf("Data: %d\nBin: ", x);
+	printBinary(x);
+	printf("\n");
+
+	codedX = sBlock(x);
+	printf("Coded by S block: %d\nBin: ", codedX);
+	printBinary(codedX);
+	printf("\n");
+
+	unCodedX = invSBlock(codedX);
+	printf("Uncoded: %d\nBin: ", unCodedX);
+	printBinary(unCodedX);
+	printf("\n");
+
+	getchar();
 
 	return EXIT_SUCCESS;
 }
