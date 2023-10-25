@@ -91,8 +91,6 @@ uint8_t f(uint8_t x) {
 
 // P-блок заміни
 uint8_t pBlock(uint8_t x) {
-	// Маска
-	x &= 0b11111111;
 
 	// Заміна за допомогою функції
 	x = f(x);
@@ -102,8 +100,6 @@ uint8_t pBlock(uint8_t x) {
 
 // Функція відновлення для P-блоку
 uint8_t invPBlock(uint8_t x) {
-	// Маска
-	x &= 0b11111111;
 
 	// Заміна за допомогою функції
 	x = swapTwoBits(x);
