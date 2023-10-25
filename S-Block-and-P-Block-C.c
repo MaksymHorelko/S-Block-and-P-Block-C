@@ -10,11 +10,6 @@
 
 /* Допоміжні функції */
 
-// Функція підрахунку бітів в числі
-uint8_t countBits(uint8_t x) {
-	return x >= 0b00010000 ? 8 : 4;
-}
-
 // Функція друку числа в бінарному виді
 void printBinary(unsigned char x) {
 	for (int i = 0; i < 8; i++) {
@@ -45,10 +40,10 @@ uint8_t concatenateSplitedByte(uint8_t *array) {
 /* Нижче функції для P-блоку */
 
 // Функція перестановки двох бітів (першого та передостаннього)
-uint8_t swapTwoBits(uint8_t x, uint8_t bits) {
+uint8_t swapTwoBits(uint8_t x) {
 	// Перестановка першогго біта та передостаннього
 	size_t bitPosition1 = 1; // Позиція першого біта для обміну
-	size_t bitPosition2 = bits - 1; // Позиція другого біта для обміну
+	size_t bitPosition2 = 3; // Позиція другого біта для обміну
 
 	// Знаходимо значення бітів за позицією
 	uint8_t bit1 = (x >> bitPosition1) & 1;
@@ -65,10 +60,10 @@ uint8_t swapTwoBits(uint8_t x, uint8_t bits) {
 }
 
 // Функція перестановки всіх бітів
-uint8_t swapAllBits(uint8_t x, uint8_t bits) {
-	for (size_t i = 0; i < bits / 2; i++) {
+uint8_t swapAllBits(uint8_t x) {
+	for (size_t i = 0; i < 4 / 2; i++) {
 		size_t bitPosition1 = i; // Позиція першого біта для обміну
-		size_t bitPosition2 = bits - i - 1; // Позиція другого біта для обміну
+		size_t bitPosition2 = 4 - i - 1; // Позиція другого біта для обміну
 
 		// Знаходимо значення бітів за позицією
 		uint8_t bit1 = (x >> bitPosition1) & 1;
@@ -86,11 +81,10 @@ uint8_t swapAllBits(uint8_t x, uint8_t bits) {
 
 // Функція перестановки
 uint8_t f(uint8_t x) {
-	uint8_t bits = countBits(x);
 
-	x = swapAllBits(x, bits);
+	x = swapAllBits(x);
 
-	x = swapTwoBits(x, bits);
+	x = swapTwoBits(x);
 
 	return x;
 }
@@ -111,11 +105,9 @@ uint8_t invPBlock(uint8_t x) {
 	// Маска
 	x &= 0b11111111;
 
-	uint8_t bits = countBits(x);
-
 	// Заміна за допомогою функції
-	x = swapTwoBits(x, bits);
-	x = swapAllBits(x, bits);
+	x = swapTwoBits(x);
+	x = swapAllBits(x);
 
 	return x;
 }
