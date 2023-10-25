@@ -79,21 +79,13 @@ uint8_t swapAllBits(uint8_t x) {
 	return x;
 }
 
-// Функція перестановки
-uint8_t f(uint8_t x) {
-
-	x = swapAllBits(x);
-
-	x = swapTwoBits(x);
-
-	return x;
-}
-
 // P-блок заміни
 uint8_t pBlock(uint8_t x) {
 
 	// Заміна за допомогою функції
-	x = f(x);
+	x = swapAllBits(x);
+
+	x = swapTwoBits(x);
 
 	return x;
 }
